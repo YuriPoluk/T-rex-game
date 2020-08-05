@@ -18,8 +18,7 @@ export default class MainGame extends GameScene  {
 
         this.gameWorld.on('game_over', this.onGameOver, this);
         this.retryBtn.on('pointerdown', this.retry, this);
-        document.addEventListener('keydown', this.onKeyDown.bind(this));
-        document.addEventListener('keyup', this.onKeyUp.bind(this));
+
     }
 
     createChildren(): void {
@@ -29,24 +28,6 @@ export default class MainGame extends GameScene  {
         this.retryBtn = this.UICnt.addChild(new Sprite('retry'));
         this.retryBtn.interactive = true;
         this.retryBtn.visible = false;
-    }
-
-    onKeyDown(kbEvent: KeyboardEvent): void {
-        const handlers: { [index: string]: () => void } = {
-            ' ': this.gameWorld.onJumpKeyDown,
-            'Control': this.gameWorld.onCrouchKeyDown
-        }
-        if(handlers[kbEvent.key])
-            handlers[kbEvent.key].bind(this.gameWorld)();
-    }
-
-    onKeyUp(kbEvent: KeyboardEvent): void {
-        const handlers: { [index: string]: () => void } = {
-            ' ': this.gameWorld.onJumpKeyUp,
-            'Control': this.gameWorld.onCrouchKeyUp
-        }
-        if(handlers[kbEvent.key])
-            handlers[kbEvent.key].bind(this.gameWorld)();
     }
 
     onResize(): void {

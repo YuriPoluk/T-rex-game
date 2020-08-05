@@ -1,5 +1,5 @@
-import { WorldObjectTypes, WorldObject} from "./WorldObject";
-import { Dino, DinoStates } from "./Dino";
+import {WorldObject, WorldObjectTypes} from "./WorldObject";
+import {Dino, DinoStates} from "./Dino";
 
 export default class GameWorld extends PIXI.Container {
     floorTiles: WorldObject[] = []
@@ -15,9 +15,10 @@ export default class GameWorld extends PIXI.Container {
     PLAYER_MOVE_SPEED = 0.3;
     SKY_OBJ_BASE_SPEED = 0.15;
 
+    IS_TOUCH_ENABLED = ('ontouchstart' in window);
+
     isJumpKeyPressed = false;
     isCrouchKeyPressed = false;
-
 
     isGameOver = false;
     isPlayerLocked = false;
@@ -37,6 +38,62 @@ export default class GameWorld extends PIXI.Container {
         super();
         this.allObjectsArrays = [this.floorTiles, this.skyObjects, this.obstacles];
         this.initWorld();
+        this.initControls();
+    }
+
+    initControls() {
+        if(this.IS_TOUCH_ENABLED) {
+            const eventDown = new KeyboardEvent('keydown', { key: ' ' });
+            const eventUp = new KeyboardEvent('keyup', { key: ' ' });
+            document.addEventListener('pointerdown', ()=>{ this.handleControls(eventDown) });
+            document.addEventListener('pointerup', ()=>{ this.handleControls(eventUp) });
+        }
+        else {
+            document.addEventListener('keydown', this.handleControls.bind(this));
+            document.addEventListener('keyup', this.handleControls.bind(this));
+        }
+    }
+
+    handleControls(kbEvent: KeyboardEvent) {
+        const type = kbEvent.type;
+        const input = kbEvent.key;
+
+
+        if(input == ' ') {
+            this.isJumpKeyPressed = type == 'keydown';
+        }
+        if(input == 'Control') {
+            this.isCrouchKeyPressed = type == 'keydown';
+        }
+
+        switch(this.dino.state) {
+            case DinoStates.RUN:
+                if(input == ' ') {
+                    if(type == 'key  down') {
+                        this.dino.jump();
+                    }
+                }
+                else if(input == 'Control') {
+                    if(type == 'keydown') {
+                        this.dino.crouch();
+                    }
+                }
+                break;
+            case DinoStates.CROUCH:
+                if(input == ' ') {
+                    if(type == 'keydown') {
+                        this.dino.run();
+                    }
+                }
+                else if(input == 'Control') {
+                    if(type == 'keyup') {
+                        this.dino.run();
+                    }
+                }
+                break;
+            case DinoStates.CRASH:
+                break;
+        }
     }
 
     initWorld(): void {
@@ -52,31 +109,6 @@ export default class GameWorld extends PIXI.Container {
         this.FLOOR_Y = this.dino.y;
         this.JUMP_HEIGHT.min  = this.dino.y - this.JUMP_HEIGHT.min;
         this.JUMP_HEIGHT.max  = this.dino.y - this.JUMP_HEIGHT.max;
-    }
-
-    onJumpKeyDown(): void {
-        this.isJumpKeyPressed = true;
-        if(this.isPlayerLocked || this.dino.state == DinoStates.CROUCH)
-            return;
-
-        this.isPlayerLocked = true;
-    }
-
-    onJumpKeyUp(): void {
-        this.isJumpKeyPressed = false;
-        this.dino.jump();
-    }
-
-    onCrouchKeyDown(): void {
-        this.isCrouchKeyPressed = true;
-        if(!this.isPlayerLocked)
-            this.dino.crouch();
-    }
-
-    onCrouchKeyUp(): void {
-        this.isCrouchKeyPressed = false;
-        if(this.dino.state == DinoStates.CROUCH)
-            this.dino.run();
     }
 
     spawnWorldObject(type: WorldObjectTypes): void {
@@ -170,12 +202,11 @@ export default class GameWorld extends PIXI.Container {
 
     controls(): void {
         //Dino is in the air and crouch button pressed
-        if(this.isCrouchKeyPressed && this.isPlayerLocked) {
+        if(this.isCrouchKeyPressed ) {
             this.dino.y += 55;
             if(this.dino.y >= this.FLOOR_Y) {
                 this.isMaxJumpHeightReached = false;
                 this.isMinJumpHeightReached = false;
-                this.isPlayerLocked = false;
 
                 this.dino.y = this.FLOOR_Y;
                 this.dino.crouch();
@@ -204,7 +235,6 @@ export default class GameWorld extends PIXI.Container {
                 if(this.dino.y >= this.FLOOR_Y) {
                     this.isMaxJumpHeightReached = false;
                     this.isMinJumpHeightReached = false;
-                    this.isPlayerLocked = false;
 
                     this.dino.y = this.FLOOR_Y;
                     this.dino.run();
