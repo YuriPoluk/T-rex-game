@@ -7,7 +7,8 @@ export enum DinoStates {
     RUN,
     JUMP,
     CROUCH,
-    CRASH
+    CRASH,
+    STAND
 }
 
 export class Dino extends Sprite {
@@ -19,6 +20,7 @@ export class Dino extends Sprite {
     state!: DinoStates;
     currentView!: Sprite | PIXI.AnimatedSprite;
     collisionBoxes = CollisionBoxes['dino_run'];
+
     JUMP_SPEED = -11;
     speedY: null | number = null;
 
@@ -34,20 +36,18 @@ export class Dino extends Sprite {
             else
                 this.viewRun.gotoAndPlay(1);
         }
-
         frames = ['dino_crouched_1', 'dino_crouched_2'];
         this.viewCrouched = this.addChild(PIXI.AnimatedSprite.fromFrames(frames));
+        this.viewRun.animationSpeed = this.viewCrouched.animationSpeed = 0.25;
 
         this.viewRun.anchor.set(0.5, 1);
         this.viewCrouched.anchor.set(0.5, 1);
         this.viewCrashed.anchor.set(0.5, 1);
         this.viewJump.anchor.set(0.5, 1);
 
-        this.viewRun.animationSpeed = this.viewCrouched.animationSpeed = 0.25;
-
         this.views = [this.viewCrashed, this.viewJump, this.viewCrouched, this.viewRun];
 
-        this.run();
+        this.stand();
     }
 
     run(): void {
@@ -82,6 +82,13 @@ export class Dino extends Sprite {
         this.currentView = this.viewCrashed;
         this.viewCrashed.visible = true;
         this.state = DinoStates.CRASH;
+    }
+
+    stand(): void {
+        this.resetViews();
+        this.currentView = this.viewJump;
+        this.viewJump.visible = true;
+        this.state = DinoStates.STAND;
     }
 
     resetViews(): void {

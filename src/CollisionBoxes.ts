@@ -130,6 +130,52 @@ export const CollisionBoxes: { [key: string]: CollisionBox[] } = {
             height: 20
         }
     ],
+    'bird_1': [
+        {
+            x: 4,
+            y: 2,
+            width: 6,
+            height: 5
+        },
+        {
+            x: 14,
+            y: 10,
+            width: 17,
+            height: 3,
+        },
+        {
+            x: 18,
+            y: 16,
+            width: 20,
+            height: 3
+        },
+        {
+            x: 18,
+            y: 22,
+            width: 6,
+            height: 12
+        }
+    ],
+    'bird_2': [
+        {
+            x: 4,
+            y: 8,
+            width: 12,
+            height: 10
+        },
+        {
+           x: 18,
+           y: 6,
+           width: 15,
+           height: 22
+        },
+        {
+            x: 32,
+            y: 20,
+            width: 12,
+            height: 7
+        }
+    ],
     'dino_run': [
         {
             x: 3,

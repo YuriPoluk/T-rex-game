@@ -1,12 +1,10 @@
 import MainGame from './MainGame'
-import AssetsPreloader from './libs/AssetsPreloader';
 import GameScene from "./GameScene";
 import {LayoutManager} from "./libs/LayoutManager";
 import {preloadAssets} from "./libs/assetsLoading";
 
 export default class GameController {
     private static instance: GameController;
-    private preloader: AssetsPreloader;
     layoutManager!: LayoutManager;
     app: PIXI.Application;
     size: {w: number, h: number};
