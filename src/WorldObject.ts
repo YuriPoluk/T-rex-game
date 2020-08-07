@@ -1,4 +1,6 @@
 import Sprite from './libs/Sprite'
+import { CollisionBox, CollisionBoxes } from './CollisionBoxes';
+import GameController from "./GameController";
 
 export enum WorldObjectTypes {
     FLOOR,
@@ -11,6 +13,7 @@ export class WorldObject extends Sprite {
     view: Sprite | PIXI.AnimatedSprite;
     isGarbage = false;
     speed?: number;
+    collisionBoxes?: CollisionBox[];
 
     constructor(type: WorldObjectTypes, textureName: string | string[]) {
         super();
@@ -24,6 +27,10 @@ export class WorldObject extends Sprite {
                 this.view.play();
                 this.view.animationSpeed = textureName.length / 24;
             }
+        }
+
+        if(type == WorldObjectTypes.OBSTACLE && typeof textureName === 'string') {
+            this.collisionBoxes = CollisionBoxes[textureName];
         }
     }
 
@@ -41,7 +48,7 @@ export class WorldObject extends Sprite {
                 }
             }
             case WorldObjectTypes.OBSTACLE:
-                return new WorldObject(WorldObjectTypes.OBSTACLE, 'cactus_' + Math.floor(Math.random() * 11));
+                return new WorldObject(WorldObjectTypes.OBSTACLE, 'cactus_' + Math.floor(Math.random() * 4));
             default:
                 throw 'incorrect WorldObject type'
         }

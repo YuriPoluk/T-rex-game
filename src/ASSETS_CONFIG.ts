@@ -1,1 +1,1 @@
-export const ASSETS_CONFIG: {[index: string]:string[]} = {"atlases":["my-texture.json"],"fonts":["Pangolin.ttf"],"images":["sky.jpg"]};
+export const ASSETS_CONFIG: {[index: string]:any} = {"atlases":["my-texture.json"],"fonts":["PressStart2P.ttf","visitor2.ttf"],"images":["sky.jpg"],"sounds":["crash.mp3","jump.mp3","score_up.mp3"]};

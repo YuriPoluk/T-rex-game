@@ -2,6 +2,7 @@ import MainGame from './MainGame'
 import AssetsPreloader from './libs/AssetsPreloader';
 import GameScene from "./GameScene";
 import {LayoutManager} from "./libs/LayoutManager";
+import {preloadAssets} from "./libs/assetsLoading";
 
 export default class GameController {
     private static instance: GameController;
@@ -22,9 +23,6 @@ export default class GameController {
         });
 
         this.app.ticker.add(this.tick, this);
-
-        this.preloader = new AssetsPreloader(this.start.bind(this));
-        this.preloader.preload();
         this.initLayoutManager();
 
         //@ts-ignore
@@ -37,6 +35,8 @@ export default class GameController {
                 clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(this.onResize.bind(this), 100);
         });
+
+        preloadAssets().then(()=>{this.start()});
     }
 
     public static getInstance(): GameController {

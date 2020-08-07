@@ -1,5 +1,10 @@
 import {WorldObject, WorldObjectTypes} from "./WorldObject";
 import {Dino, DinoStates} from "./Dino";
+import {CollisionBox} from "./CollisionBoxes";
+import * as Utils from "./Utils";
+import sound from 'pixi-sound';
+import Sprite from "./libs/Sprite";
+import GameController from "./GameController";
 
 export default class GameWorld extends PIXI.Container {
     floorTiles: WorldObject[] = []
@@ -7,6 +12,9 @@ export default class GameWorld extends PIXI.Container {
     obstacles: WorldObject[] = [];
     allObjectsArrays: WorldObject[][] = [];
     objectsToSpawn: { type: WorldObjectTypes, spawnIn: number }[] = [];
+    score = 0;
+    scoreFloored = 0;
+    lastScoreUp = 0;
 
     TILE_WIDTH = 200;
     FLOOR_TILES_QUANTITY = 8;
@@ -14,6 +22,8 @@ export default class GameWorld extends PIXI.Container {
     WIDTH = this.FLOOR_TILES_QUANTITY * this.TILE_WIDTH;
     PLAYER_MOVE_SPEED = 0.3;
     SKY_OBJ_BASE_SPEED = 0.15;
+
+    GRAV_ACCEL = 1.5;
 
     IS_TOUCH_ENABLED = ('ontouchstart' in window);
 
@@ -26,8 +36,7 @@ export default class GameWorld extends PIXI.Container {
     isMinJumpHeightReached = false;
     FLOOR_Y!: number;
     JUMP_HEIGHT = {
-        min: 40,
-        max: 100
+        max: 50
     };
 
     worldCnt = this.addChild(new PIXI.Container());
@@ -69,7 +78,7 @@ export default class GameWorld extends PIXI.Container {
         switch(this.dino.state) {
             case DinoStates.RUN:
                 if(input == ' ') {
-                    if(type == 'key  down') {
+                    if(type == 'keydown') {
                         this.dino.jump();
                     }
                 }
@@ -107,8 +116,6 @@ export default class GameWorld extends PIXI.Container {
         this.dino = this.playerCnt.addChild(new Dino());
         this.dino.position.set(100, this.HEIGHT - 2);
         this.FLOOR_Y = this.dino.y;
-        this.JUMP_HEIGHT.min  = this.dino.y - this.JUMP_HEIGHT.min;
-        this.JUMP_HEIGHT.max  = this.dino.y - this.JUMP_HEIGHT.max;
     }
 
     spawnWorldObject(type: WorldObjectTypes): void {
@@ -201,54 +208,66 @@ export default class GameWorld extends PIXI.Container {
     }
 
     controls(): void {
-        //Dino is in the air and crouch button pressed
-        if(this.isCrouchKeyPressed ) {
-            this.dino.y += 55;
+        if(this.dino.speedY != null) {
+            console.log(this.dino.y, this.JUMP_HEIGHT.max, this.dino.speedY)
+            if(this.isJumpKeyPressed && this.dino.y > this.JUMP_HEIGHT.max && this.dino.speedY < 0) {
+                this.dino.speedY -= this.GRAV_ACCEL;
+            }
+            else if(this.isCrouchKeyPressed) {
+                this.dino.speedY += this.GRAV_ACCEL*0.5  ;
+            }
+
+            this.dino.y += this.dino.speedY;
+            this.dino.speedY += this.GRAV_ACCEL;
             if(this.dino.y >= this.FLOOR_Y) {
-                this.isMaxJumpHeightReached = false;
-                this.isMinJumpHeightReached = false;
-
                 this.dino.y = this.FLOOR_Y;
-                this.dino.crouch();
-            }
-        }
-        else {
-            //jump high
-            if(this.isJumpKeyPressed && !this.isMaxJumpHeightReached) {
-                this.dino.y -= 7;
-                if(this.dino.y < this.JUMP_HEIGHT.max) {
-                    this.dino.y = this.JUMP_HEIGHT.max;
-                    this.isMaxJumpHeightReached = true;
-                }
-            }
-            //jump min
-            else if(this.dino.y < this.FLOOR_Y && this.isMinJumpHeightReached) {
-                this.dino.y -= 2;
-                if(this.dino.y < this.JUMP_HEIGHT.min) {
-                    this.dino.y = this.JUMP_HEIGHT.min;
-                    this.isMinJumpHeightReached = true;
-                }
-            }
-            //fall
-            else if(this.dino.y < this.FLOOR_Y) {
-                this.dino.y += 3;
-                if(this.dino.y >= this.FLOOR_Y) {
-                    this.isMaxJumpHeightReached = false;
-                    this.isMinJumpHeightReached = false;
-
-                    this.dino.y = this.FLOOR_Y;
-                    this.dino.run();
-                }
+                this.dino.run();
             }
         }
     }
 
     checkCollisions(): void {
         for(const obstacle of this.obstacles) {
-            if( Math.abs(this.dino.x - obstacle.x) < (this.dino.currentView.width + obstacle.view.width)*0.4 &&
-                Math.abs(this.dino.y - obstacle.y) < (this.dino.currentView.height + obstacle.view.height)*0.4) {
-                    this.onGameOver();
+            //primary AABB collision check
+            const dinoMainBox = Utils.adjustCollisionBox(this.dino, this.dino.viewRun, {x: 0, y: 0, width: this.dino.viewRun.width, height: this.dino.viewRun.height});
+            const obstacleMainBox = Utils.adjustCollisionBox(obstacle, obstacle.view, {x: 0, y: 0, width: obstacle.view.width, height: obstacle.view.height});
+            if(Utils.AABBOverlap(dinoMainBox, obstacleMainBox)) {
+                let dinoColBoxes: CollisionBox[];
+                if(this.dino.state == DinoStates.CROUCH) {
+                    dinoColBoxes = [{
+                        x: 0,
+                        y: 0,
+                        width: this.dino.currentView.width,
+                        height: this.dino.currentView.height
+                    }];
+                }
+                else {
+                    dinoColBoxes = this.dino.collisionBoxes;
+                }
+
+                for(const dinoColBox of dinoColBoxes) {
+                    let adjustedDinoColBox = Utils.adjustCollisionBox(this.dino, this.dino.viewRun, dinoColBox);
+
+                    //@ts-ignore
+                    for(const obsColBox of obstacle.collisionBoxes) {
+                        let adjustedObsColBox = Utils.adjustCollisionBox(obstacle, obstacle.view, obsColBox);
+                        if(Utils.AABBOverlap(adjustedDinoColBox, adjustedObsColBox)) {
+                            this.onGameOver();
+                            return;
+                        }
+                    }
+                }
             }
+        }
+    }
+
+    updateScore(delta: number) {
+        this.score += delta/100;
+        this.scoreFloored = Math.floor(this.score);
+        const scoreUp = Math.floor(this.score/100);
+        if(scoreUp > 0 && scoreUp > this.lastScoreUp) {
+            this.lastScoreUp = scoreUp;
+            sound.play('score_up');
         }
     }
 
@@ -263,11 +282,12 @@ export default class GameWorld extends PIXI.Container {
         if(this.isGameOver) return;
 
         this.controls();
-        this.checkCollisions();
 
         this.moveWorldObjects(delta);
         this.destroyGarbageObjects();
         this.spawnQueuedObjects(delta);
+        this.checkCollisions();
+        this.updateScore(delta);
     }
 
 }

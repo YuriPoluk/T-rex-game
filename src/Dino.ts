@@ -1,12 +1,26 @@
-import Sprite from './libs/Sprite'
+import Sprite from './libs/Sprite';
+import { CollisionBox, CollisionBoxes } from './CollisionBoxes';
+import GameController from "./GameController";
+import sound from "pixi-sound";
+
+export enum DinoStates {
+    RUN,
+    JUMP,
+    CROUCH,
+    CRASH
+}
 
 export class Dino extends Sprite {
     viewCrashed: Sprite;
     viewJump: Sprite;
     viewRun: PIXI.AnimatedSprite;
     viewCrouched: PIXI.AnimatedSprite;
+    views: (Sprite | PIXI.AnimatedSprite)[];
     state!: DinoStates;
     currentView!: Sprite | PIXI.AnimatedSprite;
+    collisionBoxes = CollisionBoxes['dino_run'];
+    JUMP_SPEED = -11;
+    speedY: null | number = null;
 
     constructor() {
         super();
@@ -31,6 +45,8 @@ export class Dino extends Sprite {
 
         this.viewRun.animationSpeed = this.viewCrouched.animationSpeed = 0.25;
 
+        this.views = [this.viewCrashed, this.viewJump, this.viewCrouched, this.viewRun];
+
         this.run();
     }
 
@@ -39,6 +55,7 @@ export class Dino extends Sprite {
         this.currentView = this.viewRun;
         this.viewRun.visible = true;
         this.viewRun.play();
+        this.speedY = null;
         this.state = DinoStates.RUN;
     }
 
@@ -51,13 +68,16 @@ export class Dino extends Sprite {
     }
 
     jump(): void {
+        sound.play('jump');
         this.resetViews();
         this.currentView = this.viewJump;
         this.viewJump.visible = true;
+        this.speedY = this.JUMP_SPEED;
         this.state = DinoStates.JUMP;
     }
 
     crash(): void {
+        sound.play('crash');
         this.resetViews();
         this.currentView = this.viewCrashed;
         this.viewCrashed.visible = true;
@@ -65,17 +85,11 @@ export class Dino extends Sprite {
     }
 
     resetViews(): void {
-        for (const child of this.children) {
-            child.visible = false;
-            if(child instanceof PIXI.AnimatedSprite)
-                child.stop();
+        for (const view of this.views) {
+            view.visible = false;
+            if(view instanceof PIXI.AnimatedSprite)
+                view.stop();
         }
     }
 }
 
-export enum DinoStates {
-    RUN,
-    JUMP,
-    CROUCH,
-    CRASH
-}
