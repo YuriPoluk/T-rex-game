@@ -1,6 +1,4 @@
 import Sprite from './libs/Sprite'
-import { CollisionBox, CollisionBoxes } from './CollisionBoxes';
-import GameController from "./GameController";
 
 export enum WorldObjectTypes {
     FLOOR_TILE,
@@ -16,7 +14,7 @@ export abstract class WorldObject extends Sprite {
     currFrame!: string;
     framesList: string[] = [];
 
-    constructor(type: WorldObjectTypes, frames: string | string[], speedOffset: number = 0) {
+    constructor(type: WorldObjectTypes, frames: string | string[], speedOffset = 0) {
         super();
         this.type = type;
         this.speedOffset = speedOffset;
@@ -33,7 +31,7 @@ export abstract class WorldObject extends Sprite {
         }
     }
 
-    getCurrFrame() {
+    getCurrFrame(): string {
         if(this.view instanceof PIXI.AnimatedSprite) {
             return this.framesList[this.view.currentFrame];
         }

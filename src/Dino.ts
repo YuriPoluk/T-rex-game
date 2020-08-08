@@ -1,6 +1,5 @@
 import Sprite from './libs/Sprite';
-import { CollisionBox, CollisionBoxes } from './CollisionBoxes';
-import GameController from "./GameController";
+import { CollisionBoxes } from './CollisionBoxes';
 import sound from "pixi-sound";
 
 export enum DinoStates {

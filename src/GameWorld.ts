@@ -49,7 +49,7 @@ export default class GameWorld extends PIXI.Container {
         this.initControls();
     }
 
-    initControls() {
+    initControls(): void {
         if(this.IS_TOUCH_ENABLED) {
             const eventDown = new KeyboardEvent('keydown', { key: ' ' });
             const eventUp = new KeyboardEvent('keyup', { key: ' ' });
@@ -62,7 +62,7 @@ export default class GameWorld extends PIXI.Container {
         }
     }
 
-    handleControls(kbEvent: KeyboardEvent) {
+    handleControls(kbEvent: KeyboardEvent): void {
         const type = kbEvent.type;
         const input = kbEvent.key;
 
@@ -119,14 +119,9 @@ export default class GameWorld extends PIXI.Container {
         this.spawnWorldObject(WorldObjectTypes.CLOUD);
         this.spawnWorldObject(WorldObjectTypes.CLOUD);
 
-        this.obstacles[0].x = this.WIDTH*1;
-        this.obstacles[1].x = this.WIDTH*1.3;
-        this.obstacles[2].x = this.WIDTH*1.6;
-
-        for(const tile of this.floorTiles) {
-            tile.visible = false;
-        }
-
+        this.obstacles[0].x = this.WIDTH*0.6;
+        this.obstacles[1].x = this.WIDTH*0.9;
+        this.obstacles[2].x = this.WIDTH*1.2;
 
         this.dino = this.playerCnt.addChild(new Dino());
         this.dino.position.set(100, this.FLOOR_Y);
@@ -221,18 +216,9 @@ export default class GameWorld extends PIXI.Container {
             if(this.dino.y >= this.FLOOR_Y) {
                 this.dino.y = this.FLOOR_Y;
                 this.dino.run();
-                if(!this.isGameStarted) {
+                if(!this.isGameStarted)
                     this.isGameStarted = true;
-                    this.showFloor();
-                }
             }
-        }
-    }
-
-    showFloor() {
-        for(let i = 0; i < this.floorTiles.length; i++) {
-            const timeout = 300 / this.floorTiles.length;
-            setTimeout(()=> { this.floorTiles[i].visible = true }, timeout*i);
         }
     }
 
@@ -255,13 +241,12 @@ export default class GameWorld extends PIXI.Container {
                     dinoColBoxes = this.dino.collisionBoxes;
                 }
 
-                for(let dinoColBox of dinoColBoxes) {
-                    let adjustedDinoColBox = Utils.adjustCollisionBox(this.dino, this.dino.viewRun, dinoColBox);
+                for(const dinoColBox of dinoColBoxes) {
+                    const adjustedDinoColBox = Utils.adjustCollisionBox(this.dino, this.dino.viewRun, dinoColBox);
 
-                    //@ts-ignore
                     const collBoxes = obstacle.getCurrCollBoxes();
                     for(const obsColBox of collBoxes) {
-                        let adjustedObsColBox = Utils.adjustCollisionBox(obstacle, obstacle.view, obsColBox);
+                        const adjustedObsColBox = Utils.adjustCollisionBox(obstacle, obstacle.view, obsColBox);
                         if(Utils.AABBOverlap(adjustedDinoColBox, adjustedObsColBox)) {
                             this.onGameOver();
                             return;
@@ -272,7 +257,7 @@ export default class GameWorld extends PIXI.Container {
         }
     }
 
-    updateScore(delta: number) {
+    updateScore(delta: number): void {
         this.score += delta/100;
         this.scoreFloored = Math.floor(this.score);
         const scoreUp = Math.floor(this.score/100);

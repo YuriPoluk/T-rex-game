@@ -27,13 +27,6 @@ export default class GameController {
         window.GAME = this;
         window.PIXI = PIXI;
 
-        let resizeTimeout: any;
-        window.addEventListener("resize", () => {
-            if(resizeTimeout)
-                clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(this.onResize.bind(this), 100);
-        });
-
         preloadAssets().then(()=>{this.start()});
     }
 

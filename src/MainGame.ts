@@ -1,5 +1,5 @@
 import Sprite from './libs/Sprite'
-import { LayoutManager, Orientation } from './libs/LayoutManager';
+import { LayoutManager } from './libs/LayoutManager';
 import GameController from "./GameController";
 import GameWorld from "./GameWorld";
 import GameScene from './GameScene'
@@ -16,7 +16,6 @@ export default class MainGame extends GameScene  {
     constructor() {
         super();
         this.createChildren();
-        this.start();
 
         this.gameWorld.on('game_over', this.onGameOver, this);
         this.retryBtn.on('pointerdown', this.retry, this);
@@ -57,10 +56,6 @@ export default class MainGame extends GameScene  {
         this.score.position.set(w*0.49, -h*0.45);
     }
 
-    start(): void {
-
-    }
-
     onGameOver(): void {
         this.retryBtn.visible = true;
     }
@@ -69,7 +64,7 @@ export default class MainGame extends GameScene  {
         this.gameController.start();
     }
 
-    updateScore() {
+    updateScore(): void {
         if(this.gameWorld.scoreFloored > parseInt(this.score.text)) {
             let newScore = '';
             const lengthDiff = 5 - (this.gameWorld.scoreFloored+'').length;

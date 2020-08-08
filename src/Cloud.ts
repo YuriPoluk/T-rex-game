@@ -7,6 +7,6 @@ export default class Cloud extends WorldObject {
     }
 
     static getRandomObj(): Cloud {
-        return new Cloud('cloud', Math.random() * 0.5);
+        return new Cloud('cloud', -Math.random() * 0.3);
     }
 }
