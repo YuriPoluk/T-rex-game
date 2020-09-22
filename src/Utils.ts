@@ -14,3 +14,7 @@ export const AABBOverlap = (boxA: CollisionBox, boxB: CollisionBox): boolean => 
     return ( Math.abs(boxA.x - boxB.x) < (boxA.width + boxB.width)*0.5 &&
         Math.abs(boxA.y - boxB.y) < (boxA.height + boxB.height)*0.5);
 }
+
+export const randomFloat = (min: number, max: number): number => {
+    return min + (max - min) * Math.random();
+}

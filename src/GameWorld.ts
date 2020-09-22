@@ -12,7 +12,6 @@ export default class GameWorld extends PIXI.Container {
     skyObjects: Cloud[] = [];
     obstacles: Obstacle[] = [];
     allObjectsArrays: [FloorTile[], Cloud[], Obstacle[]]= [this.floorTiles, this.skyObjects, this.obstacles];
-    objectsToSpawn: { type: WorldObjectTypes, spawnIn: number }[] = [];
     score = 0;
     scoreFloored = 0;
     lastScoreUp = 0;
@@ -21,14 +20,12 @@ export default class GameWorld extends PIXI.Container {
     FLOOR_TILES_QUANTITY = 5;
     HEIGHT = 160;
     WIDTH = this.FLOOR_TILES_QUANTITY * this.TILE_WIDTH;
-    PLAYER_MOVE_SPEED = 0.3;
+    PLAYER_MOVE_SPEED = 0.29;
     SPEED_INCREASE_STEP = 0.05;
     PLAYER_MOVE_SPEED_MAX = 0.6;
-    SKY_OBJ_BASE_SPEED = 0.15;
     FLOOR_Y = this.HEIGHT - 2;
     JUMP_HEIGHT_MAX = 50;
-
-    GRAV_ACCEL = 1.5;
+    GRAV_ACCEL = 0.01;
 
     IS_TOUCH_ENABLED = ('ontouchstart' in window);
 
@@ -36,8 +33,6 @@ export default class GameWorld extends PIXI.Container {
     isGameStarted = false;
     isJumpKeyPressed = false;
     isCrouchKeyPressed = false;
-
-
 
     worldCnt = this.addChild(new PIXI.Container());
     playerCnt = this.addChild(new PIXI.Container());
@@ -110,9 +105,13 @@ export default class GameWorld extends PIXI.Container {
     }
 
     initWorld(): void {
+        this.dino = this.playerCnt.addChild(new Dino());
+        this.dino.position.set(100, this.FLOOR_Y);
+
         for(let i = 0; i < this.FLOOR_TILES_QUANTITY; i++) {
             this.spawnWorldObject(WorldObjectTypes.FLOOR_TILE);
         }
+        this.spawnWorldObject(WorldObjectTypes.OBSTACLE);
         this.spawnWorldObject(WorldObjectTypes.OBSTACLE);
         this.spawnWorldObject(WorldObjectTypes.OBSTACLE);
         this.spawnWorldObject(WorldObjectTypes.OBSTACLE);
@@ -122,9 +121,6 @@ export default class GameWorld extends PIXI.Container {
         this.obstacles[0].x = this.WIDTH*0.6;
         this.obstacles[1].x = this.WIDTH*0.9;
         this.obstacles[2].x = this.WIDTH*1.2;
-
-        this.dino = this.playerCnt.addChild(new Dino());
-        this.dino.position.set(100, this.FLOOR_Y);
     }
 
     spawnWorldObject(type: WorldObjectTypes, posX?: number): void {
@@ -144,15 +140,46 @@ export default class GameWorld extends PIXI.Container {
 
         }
         else if(type == WorldObjectTypes.OBSTACLE) {
-            const obstacle = this.worldCnt.addChild(Obstacle.getRandomObj());
-            const position = posX || this.WIDTH + obstacle.view.width;
-            if(obstacle.framesList[0] == 'bird_1'){
-                obstacle.position.set(position, this.HEIGHT * 0.05 + Math.random()*this.HEIGHT * 0.1);
+            let newObstacle: Obstacle;
+            let lastObstacle = this.obstacles[this.obstacles.length - 1];
+
+            if(!lastObstacle) {
+                newObstacle = this.worldCnt.addChild(Obstacle.getRandomObj(true));
+                newObstacle.position.set(this.WIDTH + newObstacle.view.width / 2, this.HEIGHT - newObstacle.view.height/2);
             }
             else {
-                obstacle.position.set(position, this.HEIGHT - obstacle.view.height/2);
+                let lastObstacleSubtype = lastObstacle?.getSubtype();
+
+                //choose subtype of next obstacle. Bird can spawn only after cactus
+                if(lastObstacleSubtype == 'bird')
+                    newObstacle = this.worldCnt.addChild(Obstacle.getRandomObj(true));
+                else
+                    newObstacle = this.worldCnt.addChild(Obstacle.getRandomObj());
+
+                let newObstacleSubtype = newObstacle.getSubtype();
+                let posX;
+
+                if(lastObstacleSubtype == 'cactus' && newObstacleSubtype == 'cactus') {
+                    const leftEdge = Math.max(this.WIDTH, lastObstacle.y + this.dino.viewRun.width*3);
+                    posX = Utils.randomFloat(leftEdge, leftEdge + this.dino.currentView.width*2);
+                }
+                else if(lastObstacleSubtype !== 'bird' || newObstacleSubtype !== 'bird') {
+                    let posXAfterLastObs = lastObstacle.y + this.dino.currentView.width;
+                    if(posXAfterLastObs > this.WIDTH) {
+                        let potentialPositions = [posXAfterLastObs, Utils.randomFloat(this.WIDTH + newObstacle.view.width/2, this.WIDTH + this.dino.currentView.width*2)];
+                        posX = potentialPositions[Math.ceil(Math.random())];
+                    }
+                    else
+                        posX = Utils.randomFloat(this.WIDTH + newObstacle.view.width/2, this.WIDTH + this.dino.currentView.width*2);
+                }
+
+                if(newObstacle.framesList[0] == 'bird_1')
+                    newObstacle.position.set(posX, this.HEIGHT * 0.05 + Math.random()*this.HEIGHT * 0.1);
+                else
+                    newObstacle.position.set(posX, this.HEIGHT - newObstacle.view.height/2);
             }
-            this.obstacles.push(obstacle);
+
+            this.obstacles.push(newObstacle);
         }
     }
 
@@ -178,13 +205,10 @@ export default class GameWorld extends PIXI.Container {
 
     queueWorldObject(type: WorldObjectTypes): void {
         if(type == WorldObjectTypes.CLOUD) {
-            if(this.obstacles.length)
                 this.spawnWorldObject(type, this.WIDTH + Math.random()*50)
-
         }
         else if(type == WorldObjectTypes.OBSTACLE) {
-            if(this.skyObjects.length)
-                this.spawnWorldObject(type, this.WIDTH + Math.random()*250)
+                this.spawnWorldObject(type)
         }
     }
 
@@ -192,7 +216,7 @@ export default class GameWorld extends PIXI.Container {
         for(const arr of this.allObjectsArrays) {
             for(const gameObj of arr) {
                 let speed = this.PLAYER_MOVE_SPEED;
-                if(gameObj instanceof Cloud)
+                if(gameObj instanceof Cloud || gameObj instanceof Obstacle)
                     speed += gameObj.speedOffset;
                 gameObj.x -= speed * delta;
                 if(gameObj.x < -gameObj.view.width/2) {
@@ -202,17 +226,18 @@ export default class GameWorld extends PIXI.Container {
         }
     }
 
-    controls(): void {
+    controls(delta: number): void {
         if(this.dino.speedY != null) {
             if(this.isJumpKeyPressed && this.dino.y > this.JUMP_HEIGHT_MAX && this.dino.speedY < 0) {
-                this.dino.speedY -= this.GRAV_ACCEL;
+                this.dino.speedY -= this.GRAV_ACCEL * delta;
             }
             else if(this.isCrouchKeyPressed) {
-                this.dino.speedY += this.GRAV_ACCEL*0.5  ;
+                this.dino.speedY += this.GRAV_ACCEL * 0.5 * delta;
             }
 
-            this.dino.y += this.dino.speedY;
-            this.dino.speedY += this.GRAV_ACCEL;
+            this.dino.speedY += this.GRAV_ACCEL * delta;
+            this.dino.y += this.dino.speedY * delta;
+
             if(this.dino.y >= this.FLOOR_Y) {
                 this.dino.y = this.FLOOR_Y;
                 this.dino.run();
@@ -279,7 +304,7 @@ export default class GameWorld extends PIXI.Container {
 
         if(this.isGameOver) return;
 
-        this.controls();
+        this.controls(delta);
 
         if(this.isGameStarted) {
             this.moveWorldObjects(delta);

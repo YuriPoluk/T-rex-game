@@ -20,7 +20,7 @@ export class Dino extends Sprite {
     currentView!: Sprite | PIXI.AnimatedSprite;
     collisionBoxes = CollisionBoxes['dino_run'];
 
-    JUMP_SPEED = -11;
+    JUMP_SPEED = - 0.8;
     speedY: null | number = null;
 
     constructor() {
